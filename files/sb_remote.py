@@ -19,10 +19,9 @@ except:
     time.sleep(0.1)
     sys.exit(-1)
 
-
-skip_types = ["sponsor", "selfpromo", "intro", "outro"]
+skip_types = os.getenv('skiptypes', ["sponsor", "selfpromo", "intro", "outro"])
 proj_name = "SBRemote"
-proj_version = "0.2"
+proj_version = "0.2.1"
 janky_restart = True
 announce_skips = True
 
