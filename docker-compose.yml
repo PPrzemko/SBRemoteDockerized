@@ -1,0 +1,7 @@
+version: "3"
+services:
+  SBRemoteDockerized:
+    image: thws/sbremotedockerized
+    network_mode: "host"
+    stdin_open: true
+    tty: true
