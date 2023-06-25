@@ -7,12 +7,12 @@ import pyatv
 import random
 import asyncio
 from pyatv.const import InputAction
-Protocol = pyatv.const.Protocol
-
+import signal
+from singleton import SingleInstance
 from sb_cache import SBRemoteCache
 
-from singleton import SingleInstance
 
+Protocol = pyatv.const.Protocol
 try:
     me = SingleInstance()
 except:
@@ -63,7 +63,7 @@ fi
 
 def restart_script():
     """ This is a bad way to do things, but until all stalling bugs are fixed, it's better than nothing """
-    os.system(f"./restart.sh {os.getpid()}")
+    os.kill(1, signal.SIGUSR1)
 
 def simplify_segments(segments):
     """ Throw away a bunch of the interformation in the skip segments to keep things simple """
@@ -154,24 +154,15 @@ def print_state(txt):
             print (ln)
 
 async def connect_atv():
-     
-    data = json.load(open('appletv.json'))
+    ip_address = os.getenv('ip', '0')
+    creds = os.getenv('credentials', '0')
+    if ip_address == '0' or creds == '0':
+        print ("Please set environment variables ip and credentials")
+        return
 
-    id = data["identifier"]
-    creds = data["credentials"]
-    if "name" in data.keys():
-        print (f"Connecting to {data['name']}...", end="", flush=True)
-    else:
-        print (f"Connecting to ATV ({id})...", end="", flush=True)
     stored_credentials = { Protocol.AirPlay: creds }
-    
-    ip = data["name"]
-    string = "Schlafzimmer (192.168.178.132)"
-    ip_address = string.split('(')[-1].split(')')[0]
-    print(ip_address)
 
-    atvs = await pyatv.scan(loop, hosts=[ip_address]) 
-    
+    atvs = await pyatv.scan(loop, hosts=[ip_address])
     #atvs = await pyatv.scan(loop, identifier=id)
     atv = atvs[0]
     for protocol, credentials in stored_credentials.items():
@@ -189,7 +180,8 @@ async def connect_atv():
 
 async def main_loop():
     runstart = time.time()
-    sbrcache = SBRemoteCache(debug=True)
+    debugkey = os.getenv('debug',  False)
+    sbrcache = SBRemoteCache(debugkey)
     device, remote = await connect_atv()
     if device == None or remote == None:
         print ("Could not connect to ATV. Try again or attempt pairing again using pair_and_save.py\n")
@@ -303,12 +295,6 @@ async def main():
     await main_loop()
 
 if __name__ == "__main__":
-    file_path = "appletv.json"
-
-    if not os.path.exists(file_path):
-        print("appletv.json not present.")
-        exit()
-        
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
     loop.close()
